@@ -4,13 +4,13 @@ from ..models import FS
 from .pif_construction import convert_distances_into_similarities, calculate_integrals
 from .triangular_approximation import *
 
-def construct_b_part(data: np.ndarray, a_part: FS, distributions, euclide_dists, p: float = 2, 
-                     center_method: str = 'a2', margins_method: str = 'b1', thr: float = 0.4) -> tuple[int, int, int]:
+def construct_b_part(data: np.ndarray, a_part: FS, distributions: dict[str, list], dists: dict[str, np.ndarray], p: float = 2, 
+                     center_method: str = 'a2', margins_method: str = 'b1', thr: float = 0.4) -> FS:
     # Get integrals
     integrals = np.concatenate(list(calculate_integrals(a_part, distributions).values()))
 
     # Convert distances into similarities
-    euclide_similarities = np.concatenate(list(convert_distances_into_similarities(euclide_dists, p)['F-based'].values()))
+    euclide_similarities = np.concatenate(list(convert_distances_into_similarities(dists, p)['F-based'].values()))
 
     xs = np.array(integrals)
     ys = np.array(euclide_similarities)

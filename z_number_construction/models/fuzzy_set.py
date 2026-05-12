@@ -1,4 +1,7 @@
 class FS:
+    '''
+    Represents a trapezoidal fuzzy set FS(a,b,c,d). A particular case is a triangular fuzzy set FS(l,c,c,r).
+    '''
     def __init__(self, a: float, b: float, c: float, d: float):
         assert a <= b <= c <= d, 'Must be that a <= b <= c <= d.'
         self.a = a
@@ -7,6 +10,7 @@ class FS:
         self.d = d
 
     def membership_function(self):
+        '''Returns the membership function of the fuzzy set.'''
         def mf(x):
             if x <= self.a or x >= self.d:
                 return 0
@@ -19,15 +23,18 @@ class FS:
         return mf
     
     def plot(self, axis, limits=None, **kwargs):
+        '''Plots the membership function of the fuzzy set on the given axis.'''
         if limits is None:
             limits = (self.a, self.d)
         axis.plot([limits[0], self.a, self.b, self.c, self.d, limits[1]], [0, 0, 1, 1, 0, 0], **kwargs)
 
     def specificity(self, u: float) -> float:
+        '''Returns the specificity of the fuzzy set for the given universal set of size `u`.'''
         assert u > 0, 'u must be greater than 0.'
         return 1 - (self.c + self.d - self.a - self.b) / (2 * u)
     
     def defuzzify(self, method: str = 'centroid') -> float:
+        '''Represents the fuzzy set with a single value, either maximum of its membership function or x-coordinate of the centroid of the trapezoid therebeneath.'''
         if method == 'maximum':
             return (self.b + self.c) / 2
         if method == 'centroid':
