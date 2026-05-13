@@ -6,8 +6,8 @@ def find_center_a1(xs, ys):
 def find_center_a2(xs, ys, d=0.1):
   max_mean = 0
   max_center = 0
-  for left in np.arange(0, 1 - 2*d, 0.01):
-    right = left + 2*d
+  for left in np.arange(0, 1 - 2 * d, 0.01):
+    right = left + 2 * d
     mean = np.mean(ys[(xs >= left) & (xs <= right)])
     if mean > max_mean:
       max_mean = mean

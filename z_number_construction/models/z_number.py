@@ -30,7 +30,7 @@ class ZNumber:
     def fit(self, data: np.ndarray,
             p=2, distance='euclide',
             u_min=None, u_max=None,
-            q=None,
+            q=None, allow_discontinuities=False,
             optimize='specificity', beta=0.5, s_threshold=0.5, c_threshold=0.7,
             defuzzify='centroid'):
         '''
@@ -38,14 +38,15 @@ class ZNumber:
         
         Parameters:
             data (np.ndarray): Data set to be represented with a Z-number.
-            p (int): Regulates the width of the B-part, `2` by default.
+            p (float): Regulates the width of the B-part, `2` by default.
             distance (str): Distance metric to be used for data-based possibility distribution construction, `euclide` or `manhattan` or `chebyshev`, `euclide` by default.
             u_min (float): Left bound of the universal set, minimum of the data by default.
             u_max (float): Right bound of the universal set, maximum of the data by default.
-            q (int): Number of points inside the universal set for A-part 'basis points' enumeration, calculated by Sturges formula by default.
+            q (int or str): Number of points inside the universal set for A-part 'basis points' enumeration, calculated by Sturges formula by default.
+            allow_discontinuities (bool): Whether to allow A-part FS(a,b,c,d) with a=b or c=d, `False` by default.
             optimize (str): Optimization criterion, `specificity` or `b` or `both`, `specificity` by default.
             beta (float): Weight of defuzzified B-part for the `both` criterion, `0.5` by default.
-            s_threshold (float): Threshold for A-part specificity for the `b` criterion, `0.5` by default.
+            s_threshold (float or str): Threshold for A-part specificity for the `b` criterion or `cum` for calculating based on data cumulativeness, `0.5` by default.
             c_threshold (float): Threshold for defuzzified B-part for the `specificity` criterion, `0.7` by default.
             defuzzify (str): Method of defuzzification, `centroid` or `maximum`, `centroid` by default.
         '''
@@ -59,6 +60,14 @@ class ZNumber:
             if q == None:
                 q = np.floor(np.log2(len(data))) + 1 # Sturges formula
             u_step = (u_max - u_min) / q
+
+            if s_threshold == 'cum':
+                def cumulativeness(data: np.ndarray, l: float, r: float, bins: int) -> float:
+                    hist, bins = np.histogram(data, bins=bins, range=(l, r))
+                    interval = bins[1] - bins[0]
+                    return hist.sum() * interval / ((r - l) * hist.max())
+            
+                s_threshold = 1 - cumulativeness(data, u_min, u_max, 'sturges')
 
             best_score = None
             best_subscore = None
@@ -76,13 +85,15 @@ class ZNumber:
             time_data_processing_end = time()
             print(f'Converting data set into possibility distribution [DONE], time elapsed: {time_data_processing_end - time_data_processing_start:.2f} s.')
 
+            u_step_discontinuity = 0 if allow_discontinuities else u_step
+
             print('Calculating A-part and B-part...')
             time_parts_start = time()
 
             for a in tqdm(np.linspace(u_min, u_max, int((u_max - u_min) / u_step) + 1)):
-                for b in np.linspace(a + u_step, u_max, int((u_max - a - u_step) / u_step) + 1):
+                for b in np.linspace(a + u_step_discontinuity, u_max, int((u_max - a - u_step) / u_step) + 1):
                     for c in np.linspace(b, u_max, int((u_max - b) / u_step) + 1):
-                        for d in np.linspace(c + u_step, u_max, int((u_max - c - u_step) / u_step) + 1):
+                        for d in np.linspace(c + u_step_discontinuity, u_max, int((u_max - c - u_step) / u_step) + 1):
                             A = FS(a, b, c, d)
                             specificity = A.specificity(u_max - u_min)
 
